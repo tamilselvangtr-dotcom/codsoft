@@ -1,0 +1,41 @@
+# 🎬✨ Movie Genre Classifier with Student Vibes + Visualization
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+
+# 1️⃣ Load dataset
+df = pd.read_csv("movie_dataset.csv")  # Replace with your actual file
+print("👀 First look:\n", df.head())
+
+# 2️⃣ Clean data
+df.dropna(subset=["plot", "genre"], inplace=True)
+
+# 3️⃣ Split into study (train) and exam (test)
+X_train, X_test, y_train, y_test = train_test_split(
+    df["plot"], df["genre"], test_size=0.2, random_state=42
+)
+
+# 4️⃣ Convert plots into TF-IDF features
+vectorizer = TfidfVectorizer(stop_words="english", max_features=5000)
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+# 5️⃣ Train the model (machine studies 📚)
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train_tfidf, y_train)
+
+# 6️⃣ Exam time! Predict genres 🎓
+y_pred = model.predict(X_test_tfidf)
+print("\n📊 Report Card:\n", classification_report(y_test, y_pred))
+
+# 7️⃣ Visualization: Pie chart of predicted genres 🍕📊
+genre_counts = pd.Series(y_pred).value_counts()
+
+plt.figure(figsize=(6,6))
+plt.pie(genre_counts, labels=genre_counts.index, autopct="%1.1f%%", startangle=140)
+plt.title("🎥 Predicted Genre Distribution")
+plt.show()
