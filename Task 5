@@ -1,0 +1,67 @@
+# ✍️🧠 Handwritten Text Generator — Let's teach our model to doodle like a human!
+# Imagine training a robot to write letters one by one, like it's learning to mimic your handwriting style 📝
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Activation
+from tensorflow.keras.utils import to_categorical
+import random
+
+# 1️⃣ Load the handwritten text dataset (plain text format)
+with open("handwritten_text.txt", "r", encoding="utf-8") as f:
+    text = f.read().lower()
+
+print(f"📏 Total characters in dataset: {len(text)}")
+
+# 2️⃣ Create a mapping of characters to numbers (like assigning roll numbers to letters)
+chars = sorted(list(set(text)))
+char_to_int = {c: i for i, c in enumerate(chars)}
+int_to_char = {i: c for i, c in enumerate(chars)}
+
+# 3️⃣ Prepare training data — sliding window style 🪟
+# We feed the model sequences of 100 characters and ask it to guess the next one
+seq_length = 100
+X = []
+y = []
+
+for i in range(0, len(text) - seq_length):
+    input_seq = text[i:i + seq_length]
+    output_char = text[i + seq_length]
+    X.append([char_to_int[char] for char in input_seq])
+    y.append(char_to_int[output_char])
+
+# 4️⃣ Reshape and normalize input, one-hot encode output
+X = np.reshape(X, (len(X), seq_length, 1)) / len(chars)  # 📐 Scale inputs between 0 and 1
+y = to_categorical(y)  # 🎯 Convert output to one-hot vectors
+
+# 5️⃣ Build the RNN model — our doodle brain 🧠
+model = Sequential()
+model.add(LSTM(256, input_shape=(seq_length, 1)))  # LSTM = memory cell that remembers character flow
+model.add(Dense(len(chars)))
+model.add(Activation('softmax'))  # Softmax = picks the most likely next character
+
+model.compile(loss='categorical_crossentropy', optimizer='adam')
+print("🧠 Model built and ready to learn!")
+
+# 6️⃣ Train the model — study time begins 📚
+model.fit(X, y, epochs=20, batch_size=128)
+
+# 7️⃣ Generate new text — time to doodle! 🎨
+def generate_text(length=500):
+    start_index = random.randint(0, len(text) - seq_length - 1)
+    pattern = text[start_index:start_index + seq_length]
+    print("📝 Seed text:\n", pattern)
+
+    generated = ""
+    for i in range(length):
+        x = np.reshape([char_to_int[char] for char in pattern], (1, seq_length, 1)) / len(chars)
+        prediction = model.predict(x, verbose=0)
+        index = np.argmax(prediction)
+        result = int_to_char[index]
+        generated += result
+        pattern = pattern[1:] + result  # Slide the window forward
+
+    print("🎨 Generated Handwritten-style Text:\n", generated)
+
+generate_text()
